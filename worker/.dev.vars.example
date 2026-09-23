@@ -1,0 +1,4 @@
+# Local secrets for `wrangler dev`; copy to .dev.vars.
+API_TOKEN=dev-token
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=

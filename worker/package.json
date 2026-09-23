@@ -1,0 +1,17 @@
+{
+  "name": "aiusage-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --test-scheduled",
+    "deploy": "wrangler deploy",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "cf-typegen": "wrangler types --include-env=false"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.136.3"
+  }
+}

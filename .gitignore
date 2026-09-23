@@ -1,0 +1,5 @@
+node_modules/
+.wrangler/
+.dev.vars
+# Your deployment's settings. Start from worker/wrangler.example.jsonc.
+worker/wrangler.jsonc

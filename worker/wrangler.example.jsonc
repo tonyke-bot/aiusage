@@ -1,0 +1,26 @@
+// Copy to wrangler.jsonc, which is gitignored, and fill in your own values.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aiusage",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "observability": { "enabled": true },
+  // Hourly, so a failed brief is retried; the Worker itself waits for BRIEF_HOUR_UTC.
+  "triggers": { "crons": ["0 * * * *"] },
+  "vars": {
+    // The IANA zone days start in. Collectors must run with the same --timezone.
+    "REPORT_TZ": "UTC",
+    // The UTC hour from which the daily brief goes out.
+    "BRIEF_HOUR_UTC": "0"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "aiusage",
+      // Replace with the id printed by `wrangler d1 create aiusage`.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ]
+  // Secrets (wrangler secret put): API_TOKEN, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+}
