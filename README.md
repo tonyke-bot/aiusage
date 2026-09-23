@@ -241,3 +241,7 @@ locally, run `docker build -t aiusage-collector collector`.
 
 The collector image bundles [ccusage](https://github.com/ryoppippi/ccusage) by ryoppippi, which is
 under the MIT license. Its license is in the image at `/usr/share/licenses/ccusage/LICENSE`.
+
+## License
+
+[MIT](LICENSE)
