@@ -3,7 +3,7 @@
 This collects your daily Claude Code and Codex usage from every machine you work on and sends it
 to you as a daily Telegram brief.
 
-Each machine runs a small collector container. Every hour it runs
+Each machine runs a small collector container. Every 15 minutes it runs
 [ccusage](https://github.com/ryoppippi/ccusage) and uploads that machine's daily usage to a
 Cloudflare Worker, which keeps it in D1. Once a day, the Worker sends you a brief of the previous
 day:
@@ -22,12 +22,11 @@ claude-sonnet-5  $44.10   61.7M
 
 📈 7 days █▆█▇▅▄█ $7,435.45 ($1,062.21/day)
 🗓 September so far: $21,255.75 · 21.9B tokens
-Days start at 00:00 UTC
 ```
 
 ```
 laptop ─┐ collector: ccusage daily --by-agent   Cloudflare
-        ├───────────── every hour ────────────▶ Worker POST /ingest ──▶ D1
+        ├──────────── every 15 min ───────────▶ Worker POST /ingest ──▶ D1
 server ─┘                                       Worker cron, hourly ──▶ Telegram, once a day
 ```
 
@@ -153,8 +152,6 @@ The brief shows:
 - the day's cost and tokens, compared with the average of the 7 days before it
 - cost and tokens by agent and by model
 - a 7-day sparkline and the month so far
-- a warning for any device that hasn't uploaded since the day ended, since its numbers may be
-  incomplete
 
 Tokens are input, output, cache-write and cache-read tokens added together. Cache reads are
 usually most of them, and they cost far less per token than the others.
@@ -168,11 +165,11 @@ Run the image with `--help` to list the arguments.
 
 | Argument               | Default  |                                                                                                   |
 | ---------------------- | -------- | ------------------------------------------------------------------------------------------------- |
-| `--device <name>`      | required | this machine's name in the brief: up to 64 letters, digits, `.`, `_` or `-`                       |
+| `--device <name>`      | required | this machine's own name: up to 64 letters, digits, `.`, `_` or `-`                                |
 | `--api-url <url>`      | required | the Worker's URL                                                                                  |
 | `--api-token <token>`  | required | the Worker's `API_TOKEN`                                                                          |
 | `--timezone <zone>`    | `UTC`    | the zone days start in. It must match the Worker's `REPORT_TZ`.                                   |
-| `--interval <seconds>` | `3600`   | time between uploads                                                                              |
+| `--interval <seconds>` | `900`    | time between uploads                                                                              |
 | `--retry <seconds>`    | `300`    | wait after a failed upload                                                                        |
 | `--lookback <days>`    | `1`      | extra days resent on each pass                                                                    |
 | `--offline`            | off      | use ccusage's bundled prices instead of current ones. Models newer than the bundle then cost $0.  |

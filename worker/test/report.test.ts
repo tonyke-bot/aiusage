@@ -10,7 +10,7 @@ const usage: UsageRecord[] = [
 ];
 
 test("totals the day by agent and model, with week and month context", () => {
-  const brief = buildBrief({ usage, devices: [], tz, day: "2026-09-22" });
+  const brief = buildBrief({ usage, day: "2026-09-22" });
   expect(brief.total).toEqual({ cost: 163.45, tokens: 190_800_000 });
   expect(brief.byAgent.map(([name, t]) => [name, t.cost])).toEqual([
     ["claude", 150],
@@ -22,36 +22,21 @@ test("totals the day by agent and model, with week and month context", () => {
   expect(brief.monthToDate).toEqual({ cost: 226.45, tokens: 190_800_000 });
 });
 
-test("flags devices whose last upload came before the day ended", () => {
-  const brief = buildBrief({
-    usage,
-    // 2026-09-22 ends at 15:00 UTC in Tokyo.
-    devices: [
-      { device: "laptop", lastSeen: Date.parse("2026-09-22T15:05:00Z") },
-      { device: "server", lastSeen: Date.parse("2026-09-22T14:47:00Z") },
-    ],
-    tz,
-    day: "2026-09-22",
-  });
-  expect(brief.stale.map((s) => s.device)).toEqual(["server"]);
-  expect(formatBrief(brief)).toContain("⚠️ server last reported Sep 22, 23:47, so its numbers may be incomplete");
-});
-
 test("formats Telegram HTML", () => {
-  const html = formatBrief(buildBrief({ usage, devices: [], tz, day: "2026-09-22" }));
+  const html = formatBrief(buildBrief({ usage, day: "2026-09-22" }));
   expect(html).toStartWith("<b>AI usage · Tue, Sep 22</b>\n💰 <b>$163.45</b> · 190.8M tokens · ▲1716% vs 7-day avg");
   expect(html).toContain(
     [
       "<pre>agent            cost  tokens",
       "claude        $150.00  150.0M",
       "codex          $13.45   40.8M",
-      "",
+      "\u200b",
       "model            cost  tokens",
       "claude-opus-5 $150.00  150.0M",
       "gpt-5.5        $13.45   40.8M</pre>",
     ].join("\n"),
   );
-  expect(html).toContain("🗓 September so far: $226.45 · 190.8M tokens");
+  expect(html).toEndWith("\n🗓 September so far: $226.45 · 190.8M tokens");
 });
 
 test("shortens model names to fit the table", () => {
@@ -61,8 +46,6 @@ test("shortens model names to fit the table", () => {
         { date: "2026-09-22", agent: "claude", model: "claude-haiku-4-5-20251001", tokens: 1_000, cost: 1 },
         { date: "2026-09-22", agent: "claude", model: "claude-sonnet-4-5-20250929", tokens: 1_000, cost: 2 },
       ],
-      devices: [],
-      tz,
       day: "2026-09-22",
     }),
   );
@@ -71,7 +54,7 @@ test("shortens model names to fit the table", () => {
 });
 
 test("says so when a day has no usage", () => {
-  expect(formatBrief(buildBrief({ usage: [], devices: [], tz, day: "2026-09-22" }))).toContain("No usage recorded.");
+  expect(formatBrief(buildBrief({ usage: [], day: "2026-09-22" }))).toContain("No usage recorded.");
 });
 
 test("the brief comes due at the UTC hour, for the last day that had ended in the zone", () => {

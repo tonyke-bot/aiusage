@@ -7,11 +7,11 @@ const UPLOAD_CHUNK = 500;
 
 const USAGE = `usage: collector --device <name> --api-url <url> --api-token <token> [options]
 
-  --device <name>        this machine's name in the brief: letters, digits, . _ -
+  --device <name>        this machine's own name: letters, digits, . _ -
   --api-url <url>        the Worker's URL
   --api-token <token>    the Worker's API_TOKEN
   --timezone <zone>      zone that days are cut in, same as the Worker's REPORT_TZ (UTC)
-  --interval <seconds>   time between uploads (3600)
+  --interval <seconds>   time between uploads (900)
   --retry <seconds>      wait after a failed upload (300)
   --lookback <days>      extra days resent on each pass (1)
   --offline              price with ccusage's bundled prices instead of current ones
@@ -65,7 +65,7 @@ export function parseOptions(args: string[]): Options {
         "api-url": { type: "string" },
         "api-token": { type: "string" },
         timezone: { type: "string", default: "UTC" },
-        interval: { type: "string", default: "3600" },
+        interval: { type: "string", default: "900" },
         retry: { type: "string", default: "300" },
         lookback: { type: "string", default: "1" },
         offline: { type: "boolean", default: false },

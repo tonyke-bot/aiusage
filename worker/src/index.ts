@@ -42,7 +42,7 @@ export default {
     if (url.pathname === "/report" && (request.method === "GET" || request.method === "POST")) {
       const day = url.searchParams.get("date") ?? yesterday(Date.now(), env.REPORT_TZ);
       if (!isDate(day)) return json({ error: "date must be YYYY-MM-DD" }, 400);
-      const html = await composeBrief(env.DB, env.REPORT_TZ, day, Date.now());
+      const html = await composeBrief(env.DB, day);
       if (request.method === "GET") return new Response(html, { headers: { "content-type": "text/plain; charset=utf-8" } });
       try {
         await sendTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, html);
@@ -62,7 +62,7 @@ export default {
     const day = dueBrief(now, env.REPORT_TZ, Number(env.BRIEF_HOUR_UTC));
     if (!day) return;
     if (await env.DB.prepare("SELECT 1 FROM briefs WHERE date = ?1").bind(day).first()) return;
-    await sendTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, await composeBrief(env.DB, env.REPORT_TZ, day, now));
+    await sendTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, await composeBrief(env.DB, day));
     await env.DB.prepare("INSERT OR IGNORE INTO briefs (date, sent_at) VALUES (?1, ?2)").bind(day, now).run();
   },
 } satisfies ExportedHandler<Env>;
