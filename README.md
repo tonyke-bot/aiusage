@@ -1,10 +1,10 @@
 # aiusage
 
-This collects your daily Claude Code and Codex usage from every machine you work on and sends it
-to you as a daily Telegram brief.
+This collects your daily Claude Code, Codex and Antigravity usage from every machine you work on
+and sends it to you as a daily Telegram brief.
 
 Each machine runs a small collector container. Every 15 minutes it runs
-[ccusage](https://github.com/ryoppippi/ccusage) and uploads that machine's daily usage to a
+[ccusage](https://github.com/ccusage/ccusage) and uploads that machine's daily usage to a
 Cloudflare Worker, which keeps it in D1. Once a day, the Worker sends you a brief of the previous
 day:
 
@@ -80,6 +80,7 @@ docker run -d --name aiusage-collector --restart unless-stopped --init \
   --mount type=bind,src="$HOME/.claude/projects",dst=/root/.claude/projects,readonly \
   --mount type=bind,src="$HOME/.codex/sessions",dst=/root/.codex/sessions,readonly \
   --mount type=bind,src="$HOME/.codex/archived_sessions",dst=/root/.codex/archived_sessions,readonly \
+  --mount type=bind,src="$HOME/.gemini/antigravity-cli/conversations",dst=/root/.gemini/antigravity-cli/conversations,readonly \
   ghcr.io/tonyke-bot/aiusage-collector \
   --device laptop --timezone UTC \
   --api-url https://aiusage.<your-subdomain>.workers.dev --api-token <API_TOKEN>
@@ -90,6 +91,9 @@ docker run -d --name aiusage-collector --restart unless-stopped --init \
   collector that cuts days in another zone.
 - Remove the `--mount` line of any tool the machine doesn't use. A missing folder is an error
   rather than an empty mount.
+- The Antigravity line is for its CLI, `agy`. The Antigravity app keeps its conversations in
+  `~/.gemini/antigravity/conversations`, which mounts at `/root/.gemini/antigravity/conversations`
+  the same way.
 
 `docker logs aiusage-collector` should show `uploaded N row(s) of history`. The image supports
 linux/amd64 and linux/arm64.
@@ -115,9 +119,14 @@ tzdata, because ccusage quietly falls back to UTC when it can't find a zone.
 A collector's first pass after it starts uploads all of the machine's history. Each later pass
 uploads every day since its last successful upload, plus `--lookback` more days.
 
-The collector mounts only the log folders, read-only, because `~/.claude` and `~/.codex` also
-hold login tokens. Other agents that ccusage reads, such as OpenCode, aren't counted unless you
-mount their data as well.
+The collector mounts only the log folders, read-only, because `~/.claude`, `~/.codex` and
+`~/.gemini` also hold login tokens. Other agents that ccusage reads, such as OpenCode, aren't
+counted unless you mount their data as well.
+
+Antigravity keeps each conversation in a SQLite database. Once Antigravity closes a database,
+SQLite can't open it from a read-only mount, because it needs to create files next to it. So
+before each pass, the collector copies the databases that changed into the container, and
+ccusage reads the copies.
 
 ### Storing
 
@@ -209,6 +218,8 @@ CI builds the collector for linux/amd64 and linux/arm64 and pushes it to
 | `X.Y.Z`      | the git tag `vX.Y.Z`         |
 | `sha-<hash>` | a single commit              |
 
+The image turns off the anonymous daily ping that ccusage sends from version 20.1 on.
+
 ## Development
 
 ```bash
@@ -236,7 +247,7 @@ locally, run `docker build -t aiusage-collector collector`.
 
 ## Credits
 
-The collector image bundles [ccusage](https://github.com/ryoppippi/ccusage) by ryoppippi, which is
+The collector image bundles [ccusage](https://github.com/ccusage/ccusage) by ryoppippi, which is
 under the MIT license. Its license is in the image at `/usr/share/licenses/ccusage/LICENSE`.
 
 ## License

@@ -6,7 +6,7 @@ RUN apk add --no-cache tzdata
 
 # ccusage's npm package ships a static binary per platform. Fetching the one for this image
 # directly keeps multi-platform builds from running Bun under emulation.
-ARG CCUSAGE_VERSION=20.0.20
+ARG CCUSAGE_VERSION=20.1.1
 RUN set -eu; \
     case "$(uname -m)" in x86_64) arch=x64 ;; aarch64) arch=arm64 ;; *) echo "unsupported: $(uname -m)" >&2; exit 1 ;; esac; \
     registry=https://registry.npmjs.org; \
@@ -17,6 +17,10 @@ RUN set -eu; \
     wget -qO- "$registry/ccusage/-/ccusage-$CCUSAGE_VERSION.tgz" \
       | tar -xzO package/LICENSE > /usr/share/licenses/ccusage/LICENSE; \
     ccusage --version
+
+# ccusage 20.1 and later send its maintainer a daily ping with a random installation ID. Each new
+# collector container would count as another installation.
+ENV CCUSAGE_TELEMETRY_DISABLED=1
 
 WORKDIR /app
 COPY package.json ./

@@ -1,5 +1,8 @@
 import { $ } from "bun";
+import { homedir, tmpdir } from "node:os";
+import { join } from "node:path";
 import { parseArgs } from "node:util";
+import { AntigravityCopies } from "./antigravity";
 import { assertZoneinfo, errorMessage, exitOnSignals, log } from "./util";
 
 const DAY_MS = 86_400_000;
@@ -110,14 +113,23 @@ function count(name: string, raw: string): number {
   return value;
 }
 
-export async function runCcusage(options: { tz: string; lastDays?: number; offline: boolean }): Promise<DailyRow[]> {
+export async function runCcusage(options: {
+  tz: string;
+  lastDays?: number;
+  offline: boolean;
+  antigravityRoots: string[];
+}): Promise<DailyRow[]> {
   // --single-thread: by default ccusage reads files on every core at once, which peaked at 1.5 GB
   // on a machine with hundreds of cores; one thread took 1.4s and 150 MB for the same logs.
   const args = ["daily", "--json", "--by-agent", "--single-thread", "--timezone", options.tz];
   // --last counts days in --timezone, today included.
   if (options.lastDays) args.push("--last", String(options.lastDays));
   if (options.offline) args.push("--offline");
-  const result = await $`ccusage ${args}`.quiet().nothrow();
+  // Point ccusage at the Antigravity copies instead of the mounts, which it can't open.
+  const env = options.antigravityRoots.length
+    ? { ...process.env, ANTIGRAVITY_DATA_DIR: options.antigravityRoots.join(",") }
+    : process.env;
+  const result = await $`ccusage ${args}`.env(env).quiet().nothrow();
   const stderr = result.stderr.toString().trim();
   if (result.exitCode !== 0) throw new Error(`ccusage exited with ${result.exitCode}: ${stderr}`);
   if (stderr) log(`ccusage: ${stderr}`);
@@ -181,6 +193,7 @@ async function main(): Promise<void> {
     `${version}: device=${options.device} tz=${options.timezone}, uploading to ${options.apiUrl} every ${options.intervalSeconds}s`,
   );
 
+  const antigravity = new AntigravityCopies(homedir(), join(tmpdir(), "antigravity"));
   let lastSuccess: number | undefined;
   for (;;) {
     const startedAt = Date.now();
@@ -189,7 +202,10 @@ async function main(): Promise<void> {
     const lastDays =
       lastSuccess === undefined ? undefined : Math.ceil((startedAt - lastSuccess) / DAY_MS) + 1 + options.lookbackDays;
     try {
-      const rows = toRows(await runCcusage({ tz: options.timezone, lastDays, offline: options.offline }));
+      const antigravityRoots = antigravity.update();
+      const rows = toRows(
+        await runCcusage({ tz: options.timezone, lastDays, offline: options.offline, antigravityRoots }),
+      );
       const changed = await upload(options, rows);
       lastSuccess = startedAt;
       log(`uploaded ${rows.length} row(s) ${lastDays ? `for the last ${lastDays} days` : "of history"}, ${changed} added or raised`);
